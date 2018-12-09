@@ -11,7 +11,7 @@ use Log::ger;
 use parent 'HTTP::Tiny';
 
 sub request {
-    my $self = shift;
+    my ($self, $method, $url, $options) = @_;
 
     my $config_retries = $self->{retries} // $ENV{HTTP_TINY_RETRIES} // 3;
     my $config_retry_delay = $self->{retry_delay} // $ENV{HTTP_TINY_RETRY_DELAY} // 2;
@@ -19,7 +19,7 @@ sub request {
     my $retries = 0;
     my $res;
     while (1) {
-        $res = $self->SUPER::request(@_);
+        my $res = $self->SUPER::request($method, $url, $options);
         return $res if $res->{status} !~ /\A[5]/;
         last if $retries >= $config_retries;
         $retries++;
