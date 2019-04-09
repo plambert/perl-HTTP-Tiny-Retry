@@ -13,19 +13,23 @@ use parent 'HTTP::Tiny';
 sub request {
     my ($self, $method, $url, $options) = @_;
 
-    my $config_retries = $self->{retries} // $ENV{HTTP_TINY_RETRIES} // 3;
-    my $config_retry_delay = $self->{retry_delay} // $ENV{HTTP_TINY_RETRY_DELAY} // 2;
+    $self->{retries} //= $ENV{HTTP_TINY_RETRIES} // 3;
+    $self->{retry_delay} //= $ENV{HTTP_TINY_RETRY_DELAY} // 2;
 
     my $retries = 0;
     my $res;
     while (1) {
         my $res = $self->SUPER::request($method, $url, $options);
         return $res if $res->{status} !~ /\A[5]/;
-        last if $retries >= $config_retries;
+        last if $retries >= $self->{retries};
         $retries++;
-        log_trace "Failed requesting $url ($res->{status} - $res->{reason}), retrying" .
-            ($config_retry_delay ? " in $config_retry_delay second(s)" : "") .
-            " ($retries of $config_retries) ...";
+        log_trace "Failed requesting %s (%s - %s), retrying in %d second(s) (%d of %d) ...",
+            $url,
+            $res->{status},
+            $res->{reason},
+            $self->{retry_delay},
+            $retries,
+            $self->{retries};
         sleep $self->{retry_delay};
     }
     $res;
